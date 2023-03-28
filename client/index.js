@@ -262,4 +262,54 @@ function get_aggregate(selected_part) {
   output.innerHTML = innerHTMLstring;
   console.log(all_tables_name);
   console.log(all_columns_name);
+
+var edges = [
+    '<g id="edge0"><title>n0--n2</title><path fill="none" stroke="#000000" d="M100,-295 100,-240"></path></g>',
+    '<g id="edge1"><title>n2--n4</title><path fill="none" stroke="#000000" d="M100,-225.3 100,-168.3"></path></g>',
+    '<g id="edge2"><title>n4--n6</title><path fill="none" stroke="#000000" d="M100,-156.3 100,-94.3"></path></g>'
+];
+
+var svg_subscript = [
+    '<tspan dy ="5" font-size="smaller">', '</tspan>'
+];
+
+var nodes = [
+    ['<g id="node0" class="node"><text text-anchor="middle" x="100" y="-302.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
+    ['<g id="node1" class="node"><text text-anchor="middle" x="100" y="-230.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
+    ['<g id="node2" class="node"><text text-anchor="middle" x="100" y="-158.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
+    ['<g id="node3" class="node"><text text-anchor="middle" x="96" y="-86.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>']
+]
+
+function get_svg_node(symbol, subtext, index) {
+    let res =  nodes[index][0] + symbol;
+
+    if(subtext.length > 0)
+        res += svg_subscript[0] + subtext + svg_subscript[1];
+
+    res += nodes[index][1];
+
+    return res;
+}
+
+var query_tree_display = document.getElementById('graph');
+
+
+// query_tree_display.innerHTML += edges[1];
+// query_tree_display.innerHTML += edges[2];
+
+curr_level = 0;
+query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
+innerHTMLstring += projection + "<sub>" + selected_columns + "</sub>";
+if(having.length > 0) {
+  query_tree_display.innerHTML += edges[curr_level-1];
+  query_tree_display.innerHTML += get_svg_node(row_condition,having,curr_level++);
+}
+if(aggregation.length > 0) {
+  query_tree_display.innerHTML += edges[curr_level-1];
+  query_tree_display.innerHTML += get_svg_node(group_aggre_op,aggregation,curr_level++);
+}
+if(condition.length > 0) {
+  query_tree_display.innerHTML += edges[curr_level-1];
+  query_tree_display.innerHTML += get_svg_node(row_condition,condition,curr_level++);
+}
 // });
