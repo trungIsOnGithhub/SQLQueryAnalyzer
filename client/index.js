@@ -260,9 +260,6 @@ function get_aggregate(selected_part) {
   
   // console.log(innerHTMLstring)
   output.innerHTML = innerHTMLstring;
-  console.log(all_tables_name);
-  console.log(all_columns_name);
-
 var edges = [
     '<g id="edge0"><title>n0--n2</title><path fill="none" stroke="#000000" d="M100,-295 100,-240"></path></g>',
     '<g id="edge1"><title>n2--n4</title><path fill="none" stroke="#000000" d="M100,-225.3 100,-168.3"></path></g>',
@@ -312,4 +309,36 @@ if(condition.length > 0) {
   query_tree_display.innerHTML += edges[curr_level-1];
   query_tree_display.innerHTML += get_svg_node(row_condition,condition,curr_level++);
 }
+
+
+let table = document.createElement('table');
+let thead = document.createElement('thead');
+let tbody = document.createElement('tbody');
+
+table.appendChild(thead);
+table.appendChild(tbody);
+
+function create_row(html, left_title, array_data) {
+  const row = document.createElement('tr');
+
+  const row_title = document.createElement('td');
+  row_title.innerHTML = left_title;
+  row.appendChild(row_title);
+
+  for(data of array_data) {
+    const row_data = document.createElement('td');
+    row_data.innerHTML = data;
+
+    row.appendChild(row_data);
+  }
+
+  html.appendChild(row);
+}
+
+create_row(tbody, 'Tables', all_tables_name);
+create_row(tbody, 'Columns', all_columns_name);
+
+document.getElementById('table').appendChild(table);
+
+console.log(all_columns_name);
 // });
