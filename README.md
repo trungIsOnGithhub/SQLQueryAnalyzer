@@ -6,15 +6,6 @@
 
 >*As the codebase is under working, below is the tasks checklist*
 
-<details markdown="1"><summary>Tasks Checklist</summary>
-- [x] prepare sample database
-- [x] user able to write SQL query as input
-- [ ] translate into relational algebra
-- [ ] translate into query tree
-- [ ] connect server to database
-- [ ] provide API for client page
-</details>
--------------------------------
 ##### :paperclip: To go into details:
 
 * **Write SQL query as input to interact with a sample database**
@@ -36,3 +27,10 @@ WHERE condition2
   - ![image of a sample query tree](/img/query_tree.jpg)
 
 -------------------------------------------------------
+### Tasks Checklist
+- [x] prepare sample database
+- [x] user able to write SQL query as input
+- [ ] translate into relational algebra
+- [ ] translate into query tree
+- [ ] connect server to database
+- [ ] provide API for client page
