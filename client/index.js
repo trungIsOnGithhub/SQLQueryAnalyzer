@@ -1,5 +1,5 @@
 const condition_keyword = ["AND","OR","LIKE","ASC","DESC"];
-const name_regex = new RegExp("^[_a-zA-Z][_a-zA-A0-9]*")
+const name_regex = new RegExp("^[_a-zA-Z][_a-zA-A0-9]*$");
 let all_tables_name = [], all_columns_name = [];
 
 const row_condition = "σ";
@@ -13,70 +13,99 @@ const submit_btn = document.getElementById("submit-btn");
 const indent_level = ["<br><tt>&nbsp;</tt>","<br><tt>&nbsp;&nbsp;&nbsp;</tt>","<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;</tt>","<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>"]
 const split1regex = /[\s\n\t]/;
 const filter_empty_string = (str) => str !== "";
+
 function get_table_type(str) {
-  let natural_join_pos = str.indexOf("naturaljoin");
-  let has_natural_keyword = true;
-  if(has_natural_keyword && natural_join_pos > 0) {
-    return [0,natural_join_pos];
+  let cross_join_pos = str.indexOf("crossjoin");
+  let has_cross_keyword = true;
+  if(has_cross_keyword && cross_join_pos > 0) {
+    return [0,cross_join_pos];
   }
 
   let on_pos = str.indexOf("on");
+  let has_on_keyword = true;
   
   if(on_pos===-1) {
-    return [23];
+    return [-1,-1,-1];//error
+  }
+
+  let natural_join_pos = str.indexOf("naturaljoin");
+  let has_natural_keyword = true;
+  if(has_natural_keyword && natural_join_pos > 0) {
+    return [0,on_pos,natural_join_pos,12,join_op];
   }
 
   let inner_join_pos = str.indexOf("innerjoin");
   let has_inner_keyword = true;
   if(has_inner_keyword && inner_join_pos > 0) {
-    return [1,on_pos,inner_join_pos];
+    return [1,on_pos,inner_join_pos,9,'⋈i'];
   }
 
-  return 'dda';
+  let loj_join_pos = str.indexOf("leftouterjoin");
+  let has_lo_keyword = true;
+  if(has_lo_keyword && loj_join_pos > 0) {
+    return [2,on_pos,loj_join_pos,13,'⋈oL'];
+  }
+
+  let roj_join_pos = str.indexOf("rightouterjoin");
+  let has_ro_keyword = true;
+  if(has_ro_keyword && roj_join_pos > 0) {
+    return [3,on_pos,roj_join_pos,16,'⋈oR'];
+  }
+
+  let oj_join_pos = str.indexOf("outerjoin");
+  let has_o_keyword = true;
+  if(has_o_keyword && oj_join_pos > 0) {
+    return [4,on_pos,oj_join_pos,9,'⋈o'];
+  }
+
+  let join_pos = str.indexOf("join");
+  let has_join_keyword = true;
+  if(has_join_keyword && join_pos > 0) {
+    return [5,on_pos,join_pos,5,join_op];
+  }
+
+  return [6,str];
 }
 
 function handle_table_str(str, info) {//already lowercased
   if(info[0]===0) {
-    let natural_join_pos = info[1];
-    let lhs = str.substring(0,natural_join_pos);
-    let rhs = str.substring(natural_join_pos+9);
+    let cross_join_pos = info[1];
+    let lhs = str.substring(0,cross_join_pos);
+    let rhs = str.substring(cross_join_pos+7);
 
     lhs = handle_table_str(lhs, get_table_type(lhs));
-    lhs = handle_table_str(rhs, get_table_type(rhs));
+    rhs = handle_table_str(rhs, get_table_type(rhs));
 
-    // lhs = handle_table_str(lhs);
-    // rhs = handle_table_str(rhs);
-
-    return "(" + lhs + join_op + "<sub>natural</sub> " + rhs + ")";
+    return "(" + lhs + join_op + "<sub>cross</sub> " + rhs + ")";
   }
-  if(info[0]==1) {
-    let inner_join_pos = info[2], on_pos = info[1];
-    let lhs = str.substring(0,inner_join_pos);
-    let rhs = str.substring(inner_join_pos+8, on_pos);
+  if(info[0]>0 && info[0]<6) {
+    let [dummy,on_pos,join_keyword_pos,rhs_offset,join_oper] = info;
+    let lhs = str.substring(0,join_keyword_pos);
+    let rhs = str.substring(join_keyword_pos+rhs_offset, on_pos);
     let cond = str.substring(on_pos+2);
 
-    // lhs = handle_table_str(lhs);
-    // rhs = handle_table_str(rhs); 
+    lhs = handle_table_str(lhs, get_table_type(lhs));
+    rhs = handle_table_str(rhs, get_table_type(rhs));
 
-    return "(" + lhs + " " + join_op + "<sub>" + cond + "</sub> " + rhs +")";
+    return "(" + lhs + " " + join_oper + "<sub>" + cond + "</sub> " + rhs +")";
   }
-  
+  console.log("dit cu: "+str);
   // is table name
-  all_tables_name.push(str);
+  if(!all_tables_name.includes(str)) all_tables_name.push(str);
   return str;
 }
-function build_rela_algebra_HTML(current, to_append) {
-  // if(current === "")
-  //   { return to_append; }
-  //   console.log("cascasc");
-  return current + "<sub>" + to_append + "</sub>";
-}
+// function build_rela_algebra_HTML(current, to_append) {
+//   // if(current === "")
+//   //   { return to_append; }
+//   //   console.log("cascasc");
+//   return current + "<sub>" + to_append + "</sub>";
+// }
 
 function get_columns_involved(selected_cols, group_by, condition) {
   let result = [];
   let temp_arr = selected_cols.split(",");
 
-  console.log(temp_arr)
+  console.log("cac "+temp_arr[0])
 
   for(let index in temp_arr) {
     if( condition_keyword.includes(temp_arr[index].toUpperCase()) )
@@ -98,9 +127,18 @@ function get_columns_involved(selected_cols, group_by, condition) {
   }
 
   temp_arr = condition.split(split1regex);
+  console.log("to the sea: "+temp_arr)
   for(let index in temp_arr) {
     if( condition_keyword.includes(temp_arr[index].toUpperCase()) )
       continue;
+
+    let compar_list = ['=','>','<','<>'];
+    for(compar of compar_list) {
+      let compar_pos = temp_arr[index].indexOf(compar);
+      if(compar_pos> 0) {
+        temp_arr[index] = temp_arr[index].substring(0,compar_pos);
+      }
+    }
 
     let dot_pos = temp_arr[index].indexOf(".");
     if(dot_pos > 0) {
@@ -128,31 +166,36 @@ function get_columns_involved(selected_cols, group_by, condition) {
   return result;
 }
 
+function get_tables_array(query,from_pos,where_pos) {
+  console.log(query.substring(from_pos+4,where_pos).split(split1regex));
+  return query.substring(from_pos+4,where_pos).split(split1regex).join("").split(",");
+}
 function get_tables(query,from_pos,where_pos) {
-  let all_tables_array = query.substring(from_pos+4,where_pos).split(split1regex).join("").split(",");
+  let all_tables_rexp_array = get_tables_array(query,from_pos,where_pos);
   let all_tables_str = "";
-  // all_tables_array = all_tables_array.filter(filter_empty_string);
-  console.log(all_tables_array);
+  // all_tables_rexp_array = all_tables_rexp_array.filter(filter_empty_string);
 
-  for(let index in all_tables_array) {
+  for(let index in all_tables_rexp_array) {
     console.log(index)
-    let temp = all_tables_array[index].toLowerCase();
+    let temp = all_tables_rexp_array[index].toLowerCase();
     let info = get_table_type(temp);
-    all_tables_array[index] = handle_table_str(temp,info);
+    all_tables_rexp_array[index] = handle_table_str(temp,info);
   }
+  console.log(all_tables_rexp_array);
 
-  for(let index in all_tables_array) {
+  for(let index in all_tables_rexp_array) {
     if(index == 0) {
-      all_tables_str += all_tables_array[index];
+      all_tables_str += all_tables_rexp_array[index];
     }
     else {
       all_tables_str += " × ";
-      all_tables_str += all_tables_array[index];
+      all_tables_str += all_tables_rexp_array[index];
     }
   }
 
-  return all_tables_str;
+  return [all_tables_str,all_tables_rexp_array];
 }
+
 function get_aggregate(selected_part) {
   let aggregate = "";
   let temp_arr = selected_part.split(",");
@@ -168,7 +211,7 @@ function get_aggregate(selected_part) {
   return aggregate;
 }
 
-//  submit_btn.addEventListener("click", () => {
+submit_btn.addEventListener("click", () => {
   const query = input.value;
 
   const lower_query = query.toLowerCase();
@@ -181,15 +224,17 @@ function get_aggregate(selected_part) {
   const having_pos = lower_query.indexOf("having ");
   const order_pos = lower_query.indexOf("order ");
 
+  // console.log(get_tables(query,from_pos,where_pos));
+
   const where_end_pos = (group_pos > 0 && by_pos > 0)? group_pos : query.length;
   const group_by_end_pos = (having_pos > 0)? having_pos : query.length;
   const having_end_pos = (order_pos > 0)? order_pos : query.length;
 
-  const select_part = "|"+query.substring(select_pos+7, from_pos).split(split1regex).join("")+"|";
+  const selected_columns = query.substring(select_pos+7, from_pos).split(split1regex).join("");
 
-  const aggregation = get_aggregate(select_part);
+  const aggregation = get_aggregate(selected_columns);
 
-  const selected_columns = select_part;
+  // const selected_columns = select_part;
 
   let condition = "";
   let query_tokens = [];
@@ -209,7 +254,7 @@ function get_aggregate(selected_part) {
 
     console.log("cacaca:  "+query_tokens)
 
-    condition = "|"+query_tokens.join(" ")+"|";
+    condition = query_tokens.join(" ");
     // let temp_array = condition.toLowerCase().split("");
     // for(let index in temp_array) {
     //   if(temp_array[index] === "o" && temp_array[index+1] === "r") {
@@ -234,7 +279,8 @@ function get_aggregate(selected_part) {
     having = having_part;
   }
 
-  let selected_tables = get_tables(query,from_pos,where_pos);
+  let selected_tables = get_tables(query,from_pos,where_pos)[0];
+  console.log(selected_tables)
   // selected_tables += "";
 
   // const query_token_array = select_pos+" "+from_pos+" "+where_pos;
@@ -260,21 +306,79 @@ function get_aggregate(selected_part) {
   
   // console.log(innerHTMLstring)
   output.innerHTML = innerHTMLstring;
-var edges = [
-    '<g id="edge0"><title>n0--n2</title><path fill="none" stroke="#000000" d="M100,-295 100,-240"></path></g>',
-    '<g id="edge1"><title>n2--n4</title><path fill="none" stroke="#000000" d="M100,-225.3 100,-168.3"></path></g>',
-    '<g id="edge2"><title>n4--n6</title><path fill="none" stroke="#000000" d="M100,-156.3 100,-94.3"></path></g>'
+
+  var query_tree_display = document.getElementById('graph');
+
+  query_tree_display.innerHTML = "";
+
+
+  // query_tree_display.innerHTML += edges[1];
+  // query_tree_display.innerHTML += edges[2];
+  
+  curr_level = 0;
+  query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
+  let table_node_vert_offset = 0;
+  innerHTMLstring += projection + "<sub>" + selected_columns + "</sub>";
+  if(having.length > 0) {
+    query_tree_display.innerHTML += edges[curr_level-1];
+    query_tree_display.innerHTML += get_svg_node(row_condition,having,curr_level++);
+  }
+  if(aggregation.length > 0) {
+    table_node_vert_offset = 68;
+    query_tree_display.innerHTML += edges[curr_level-1];
+    query_tree_display.innerHTML += get_svg_node(group_aggre_op,aggregation,curr_level++);
+  }
+  if(condition.length > 0) {
+    query_tree_display.innerHTML += edges[curr_level-1];
+    query_tree_display.innerHTML += get_svg_node(row_condition,condition,curr_level++);
+  }
+  
+  let tables_rexp_arr = get_tables(query,from_pos,where_pos)[1];
+  // console.log(tables_arr);
+  // tables_arr.push('dsa');
+  query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M100,'+(-220+table_node_vert_offset).toString()+' 100,'+(-140+table_node_vert_offset).toString()+'"></path></g>';
+
+  if(tables_rexp_arr.length === 1) {
+    if(tables_rexp_arr[0].indexOf(join_op) > 0) {
+      let length = tables_rexp_arr[0].length;
+      let temp_arr = tables_rexp_arr[0].substring(1,length-1).split(' ');
+      
+      let end_condi_pos = temp_arr[1].indexOf('</sub>'),
+          start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
+      let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
+      console.log(condi)
+  
+      let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
+      console.log(join_oper)
+  
+      query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M85,'+(-120+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += get_svg_node_str(join_oper,condi,'<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-130+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M115,'+(-120+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[2],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
+    else query_tree_display.innerHTML += get_svg_node_str(tables_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-126+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+  }
+
+  build_info_table(all_tables_name, all_columns_name)
+
+});
+let edges = [
+    '<g id="edge0"><path fill="none" stroke="#000000" d="M100,-295 100,-240"></path></g>',
+    '<g id="edge1"><path fill="none" stroke="#000000" d="M100,-225.3 100,-168.3"></path></g>',
+    '<g id="edge2"><path fill="none" stroke="#000000" d="M100,-156.3 100,-94.3"></path></g>'
 ];
 
-var svg_subscript = [
+let svg_subscript = [
     '<tspan dy ="5" font-size="smaller">', '</tspan>'
 ];
 
 var nodes = [
     ['<g id="node0" class="node"><text text-anchor="middle" x="100" y="-302.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
     ['<g id="node1" class="node"><text text-anchor="middle" x="100" y="-230.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
-    ['<g id="node2" class="node"><text text-anchor="middle" x="100" y="-158.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
-    ['<g id="node3" class="node"><text text-anchor="middle" x="96" y="-86.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>']
+    ['<g id="node2" class="node"><text text-anchor="middle" x="100" y="-158.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>']
 ]
 
 function get_svg_node(symbol, subtext, index) {
@@ -288,57 +392,54 @@ function get_svg_node(symbol, subtext, index) {
     return res;
 }
 
-var query_tree_display = document.getElementById('graph');
+function get_svg_node_str(symbol, subtext, wrap1, wrap2) {
+  let res =  wrap1 + symbol;
 
+  console.log(res)
 
-// query_tree_display.innerHTML += edges[1];
-// query_tree_display.innerHTML += edges[2];
+  if(subtext.length > 0)
+      res += svg_subscript + subtext + svg_subscript[1];
 
-curr_level = 0;
-query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
-innerHTMLstring += projection + "<sub>" + selected_columns + "</sub>";
-if(having.length > 0) {
-  query_tree_display.innerHTML += edges[curr_level-1];
-  query_tree_display.innerHTML += get_svg_node(row_condition,having,curr_level++);
-}
-if(aggregation.length > 0) {
-  query_tree_display.innerHTML += edges[curr_level-1];
-  query_tree_display.innerHTML += get_svg_node(group_aggre_op,aggregation,curr_level++);
-}
-if(condition.length > 0) {
-  query_tree_display.innerHTML += edges[curr_level-1];
-  query_tree_display.innerHTML += get_svg_node(row_condition,condition,curr_level++);
+  console.log(res)
+
+  return res + wrap2;
 }
 
+// }
+function build_info_table(all_tables_name, all_columns_name) {
+  let html_table = document.getElementById('table');
+  if(html_table.childElementCount > 0) html_table.removeChild(html_table.lastChild);
 
-let table = document.createElement('table');
-let thead = document.createElement('thead');
-let tbody = document.createElement('tbody');
+  let table = document.createElement('table');
+  let thead = document.createElement('thead');
+  let tbody = document.createElement('tbody');
 
-table.appendChild(thead);
-table.appendChild(tbody);
+  table.appendChild(thead);
+  table.appendChild(tbody);
 
-function create_row(html, left_title, array_data) {
-  const row = document.createElement('tr');
+  function create_row(html, left_title, array_data) {
+  
+    const row = document.createElement('tr');
 
-  const row_title = document.createElement('td');
-  row_title.innerHTML = left_title;
-  row.appendChild(row_title);
+    const row_title = document.createElement('td');
+    row_title.innerHTML = left_title;
+    row.appendChild(row_title);
 
-  for(data of array_data) {
-    const row_data = document.createElement('td');
-    row_data.innerHTML = data;
+    for(data of array_data) {
+      const row_data = document.createElement('td');
+      row_data.innerHTML = data;
 
-    row.appendChild(row_data);
+      row.appendChild(row_data);
+    }
+
+    html.appendChild(row);
   }
 
-  html.appendChild(row);
+  create_row(tbody, 'Các bảng dữ liệu được đề cập ', all_tables_name);
+  create_row(tbody, 'Các cột dữ liệu được đề cập  ', all_columns_name);
+
+  html_table.appendChild(table);
 }
 
-create_row(tbody, 'Tables', all_tables_name);
-create_row(tbody, 'Columns', all_columns_name);
-
-document.getElementById('table').appendChild(table);
-
-console.log(all_columns_name);
+// console.log(all_columns_name);
 // });
