@@ -2,6 +2,8 @@ const condition_keyword = ["AND","OR","LIKE","ASC","DESC"];
 const name_regex = new RegExp("^[_a-zA-Z][_a-zA-A0-9]*$");
 let all_tables_name = [], all_columns_name = [];
 
+const order_by_op = "τ";
+const descart = " × ";
 const row_condition = "σ";
 const projection = "π";
 const join_op = "⋈";
@@ -76,7 +78,7 @@ function handle_table_str(str, info) {//already lowercased
     lhs = handle_table_str(lhs, get_table_type(lhs));
     rhs = handle_table_str(rhs, get_table_type(rhs));
 
-    return "(" + lhs + join_op + "<sub>cross</sub> " + rhs + ")";
+    return "(" + lhs + " " + join_op + "<sub>cross</sub> " + rhs + ")";
   }
   if(info[0]>0 && info[0]<6) {
     let [dummy,on_pos,join_keyword_pos,rhs_offset,join_oper] = info;
@@ -167,16 +169,23 @@ function get_columns_involved(selected_cols, group_by, condition) {
 }
 
 function get_tables_array(query,from_pos,where_pos) {
-  console.log(query.substring(from_pos+4,where_pos).split(split1regex));
-  return query.substring(from_pos+4,where_pos).split(split1regex).join("").split(",");
+  if(where_pos > 0) {
+    console.log(query.substring(from_pos+4,where_pos).split(split1regex));
+    return query.substring(from_pos+4,where_pos).split(split1regex).join("").split(",");
+  }
+  return query.substring(from_pos+4).split(split1regex).join("").split(",");
 }
-function get_tables(query,from_pos,where_pos) {
+function get_tables(query,from_pos,where_pos, group_pos, order_pos) {
   let all_tables_rexp_array = get_tables_array(query,from_pos,where_pos);
-  let all_tables_str = "";
+
+  if(where_pos === -1 && group_pos > 0) all_tables_rexp_array = get_tables_array(query,from_pos,group_pos);
+  else if(where_pos === -1 && order_pos > 0) all_tables_rexp_array = get_tables_array(query,from_pos,order_pos);
+
+  let all_tables_str_local = "";
   // all_tables_rexp_array = all_tables_rexp_array.filter(filter_empty_string);
 
   for(let index in all_tables_rexp_array) {
-    console.log(index)
+    // console.log(index)
     let temp = all_tables_rexp_array[index].toLowerCase();
     let info = get_table_type(temp);
     all_tables_rexp_array[index] = handle_table_str(temp,info);
@@ -185,15 +194,15 @@ function get_tables(query,from_pos,where_pos) {
 
   for(let index in all_tables_rexp_array) {
     if(index == 0) {
-      all_tables_str += all_tables_rexp_array[index];
+      all_tables_str_local += all_tables_rexp_array[index];
     }
     else {
-      all_tables_str += " × ";
-      all_tables_str += all_tables_rexp_array[index];
+      all_tables_str_local += descart;
+      all_tables_str_local += all_tables_rexp_array[index];
     }
   }
 
-  return [all_tables_str,all_tables_rexp_array];
+  return [all_tables_str_local,all_tables_rexp_array];
 }
 
 function get_aggregate(selected_part) {
@@ -211,10 +220,35 @@ function get_aggregate(selected_part) {
   return aggregate;
 }
 
-submit_btn.addEventListener("click", () => {
-  const query = input.value;
+function eliminate_ineed_from_query(query, lowered_query) {
+  let result = '';
+  let temp_i = lowered_query.indexOf('distinct');
+  // console.log('(((((((((((((((((((  '+temp_i+'distinct'.length)
+    console.log('(((((((((((((((((((  '+query.substring(0,temp_i))
+  if(temp_i > 0) result = query.substring(0,temp_i) + query.substring(temp_i+8);
+  else result = query;
+  temp_i = result.toLowerCase().indexOf('limit');
+  console.log(temp_i)
+  if(temp_i > 0) result = result.substring(0,temp_i);
+  // temp_i = lowered_query.indexOf('offset');
+  // if(temp_i > 0) result = query.substring(0,temp_i) + query.substring(temp_i+'offset'.length);
+  // let temp_i3 = lowered_query.indexOf('offset ');
+  console.log(result)
+  return result;
+}
 
-  const lower_query = query.toLowerCase();
+
+submit_btn.addEventListener("click", () => {
+  reset_global();
+
+  let query = input.value;
+
+  let lower_query = query.toLowerCase();
+
+  query = eliminate_ineed_from_query(query, lower_query);
+   // console.log('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  |'+eliminate_ineed_from_query(query, lower_query)+'|')
+  lower_query = query.toLowerCase();
+  console.log('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  |'+lower_query+'|')
 
   const select_pos = lower_query.indexOf("select ");
   const from_pos = lower_query.indexOf("from ");
@@ -222,13 +256,17 @@ submit_btn.addEventListener("click", () => {
   const group_pos = lower_query.indexOf("group ");
   const by_pos = lower_query.indexOf(" by ")
   const having_pos = lower_query.indexOf("having ");
-  const order_pos = lower_query.indexOf("order ");
+  const order_pos = lower_query.indexOf("order");
+
+  console.log(order_pos);
 
   // console.log(get_tables(query,from_pos,where_pos));
 
-  const where_end_pos = (group_pos > 0 && by_pos > 0)? group_pos : query.length;
-  const group_by_end_pos = (having_pos > 0)? having_pos : query.length;
-  const having_end_pos = (order_pos > 0)? order_pos : query.length;
+  const where_end_pos = (group_pos > 0 && by_pos > 0)? group_pos : (order_pos > 0)? order_pos : query.length;
+  console.log(where_end_pos)
+  const group_by_end_pos = (having_pos > 0)? having_pos : (order_pos > 0)? order_pos : query.length;
+  const having_end_pos = (order_pos > 0)? order_pos : (order_pos > 0)? order_pos : query.length;
+  const order_by_end_pos = query.length;//current ly order by is final thing we can get
 
   const selected_columns = query.substring(select_pos+7, from_pos).split(split1regex).join("");
 
@@ -252,7 +290,7 @@ submit_btn.addEventListener("click", () => {
       }
     }
 
-    console.log("cacaca:  "+query_tokens)
+    // console.log("cacaca:  "+query_tokens)
 
     condition = query_tokens.join(" ");
     // let temp_array = condition.toLowerCase().split("");
@@ -279,9 +317,13 @@ submit_btn.addEventListener("click", () => {
     having = having_part;
   }
 
-  let selected_tables = get_tables(query,from_pos,where_pos)[0];
-  console.log(selected_tables)
-  // selected_tables += "";
+  let order_by_part = "";
+  console.log("$$$$$$$$$$$$$$$$$$$   "+order_pos);
+  if(order_pos > 0) {
+    order_by_part = lower_query.substring(order_pos+8, order_by_end_pos);
+  }
+
+  let selected_tables = get_tables(query,from_pos,where_pos,group_pos,order_pos)[0];  // selected_tables += "";
 
   // const query_token_array = select_pos+" "+from_pos+" "+where_pos;
 
@@ -315,16 +357,26 @@ submit_btn.addEventListener("click", () => {
   // query_tree_display.innerHTML += edges[1];
   // query_tree_display.innerHTML += edges[2];
   
-  curr_level = 0;
-  query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
   let table_node_vert_offset = 0;
-  innerHTMLstring += projection + "<sub>" + selected_columns + "</sub>";
+  curr_level = 0;
+  // query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
+  if(order_by_part.length > 0) {
+    table_node_vert_offset += 68;
+    query_tree_display.innerHTML += edges[curr_level];
+    query_tree_display.innerHTML += get_svg_node(order_by_op,order_by_part,curr_level++);
+  }
+  // innerHTMLstring += projection + "<sub>" + selected_columns + "</sub>";
+  if(selected_columns.length > 0) {
+    if (curr_level > 0) query_tree_display.innerHTML += edges[curr_level-1];
+
+    query_tree_display.innerHTML += get_svg_node(projection,selected_columns,curr_level++);
+  }
   if(having.length > 0) {
     query_tree_display.innerHTML += edges[curr_level-1];
     query_tree_display.innerHTML += get_svg_node(row_condition,having,curr_level++);
   }
   if(aggregation.length > 0) {
-    table_node_vert_offset = 68;
+    table_node_vert_offset += 68;
     query_tree_display.innerHTML += edges[curr_level-1];
     query_tree_display.innerHTML += get_svg_node(group_aggre_op,aggregation,curr_level++);
   }
@@ -332,11 +384,15 @@ submit_btn.addEventListener("click", () => {
     query_tree_display.innerHTML += edges[curr_level-1];
     query_tree_display.innerHTML += get_svg_node(row_condition,condition,curr_level++);
   }
+  console.log("^^^^^^^^^^^^^^^^^^  |"+order_by_part)
   
-  let tables_rexp_arr = get_tables(query,from_pos,where_pos)[1];
-  // console.log(tables_arr);
+  let tables_rexp_arr = get_tables(query,from_pos,where_pos,group_pos,order_pos)[1];
+  console.log('RRRRRRRRRRRRRRRRR  '+typeof(tables_rexp_arr));
+  console.log(get_tables(query,from_pos,where_pos))
   // tables_arr.push('dsa');
-  query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M100,'+(-220+table_node_vert_offset).toString()+' 100,'+(-140+table_node_vert_offset).toString()+'"></path></g>';
+  let first_edge_table = -220;
+  if(where_pos === -1) first_edge_table = -280;
+  query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M100,'+(first_edge_table+table_node_vert_offset).toString()+' 100,'+(-140+table_node_vert_offset).toString()+'"></path></g>';
 
   if(tables_rexp_arr.length === 1) {
     if(tables_rexp_arr[0].indexOf(join_op) > 0) {
@@ -359,7 +415,96 @@ submit_btn.addEventListener("click", () => {
       query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M115,'+(-120+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
       query_tree_display.innerHTML += get_svg_node_str(temp_arr[2],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
     }
-    else query_tree_display.innerHTML += get_svg_node_str(tables_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-126+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    else {
+      query_tree_display.innerHTML += get_svg_node_str(tables_rexp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-126+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
+  }
+  else if(tables_rexp_arr.length === 2) {
+    let lhs_has_join = tables_rexp_arr[0].indexOf(join_op) > 0;
+    let rhs_has_join = tables_rexp_arr[1].indexOf(join_op) > 0;
+
+    if(lhs_has_join && rhs_has_join) {
+
+      let length = tables_rexp_arr[0].length;
+      let temp_arr = tables_rexp_arr[0].substring(1,length-1).split(' ');
+      
+      let end_condi_pos = temp_arr[1].indexOf('</sub>'),
+          start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
+      let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
+      console.log(condi)
+  
+      let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
+      console.log(join_oper);
+  
+      query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M85,'+(-120+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += get_svg_node_str(join_oper,condi,'<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-130+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M115,'+(-120+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[2],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
+    else if(lhs_has_join) {
+
+      let length = tables_rexp_arr[0].length;
+      let temp_arr = tables_rexp_arr[0].substring(1,length-1).split(' ');
+      
+      let end_condi_pos = temp_arr[1].indexOf('</sub>'),
+          start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
+      let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
+      console.log(condi)
+  
+      let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
+      console.log(join_oper)
+  
+      query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M85,'+(-120+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += get_svg_node_str(join_oper,condi,'<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-130+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M115,'+(-120+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[2],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
+    else if(rhs_has_join) {
+      let length = tables_rexp_arr[0].length;
+      let temp_arr = tables_rexp_arr[0].substring(1,length-1).split(' ');
+      
+      let end_condi_pos = temp_arr[1].indexOf('</sub>'),
+          start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
+      let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
+      console.log(condi)
+  
+      let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
+      console.log(join_oper)
+  
+      query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M85,'+(-120+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += get_svg_node_str(join_oper,condi,'<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-130+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M115,'+(-120+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(temp_arr[2],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
+    else {
+      // let length = tables_rexp_arr[0].length;
+      // let temp_arr = tables_rexp_arr[0].substring(1,length-1).split(' ');
+      
+      // let end_condi_pos = temp_arr[1].indexOf('</sub>'),
+      //     start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
+      // let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
+      // console.log(condi)
+  
+      // let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
+      // console.log(join_oper)
+  
+      query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M93,'+(-130+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(tables_rexp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += get_svg_node_str(descart,'','<g id="node3" class="node"><text text-anchor="middle" x="100" y="'+(-130+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    
+      query_tree_display.innerHTML += '<g id="edge4"><path fill="none" stroke="#000000" d="M108,'+(-130+table_node_vert_offset).toString()+' 158,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
+      query_tree_display.innerHTML += get_svg_node_str(tables_rexp_arr[1],'','<g id="node3" class="node"><text text-anchor="middle" x="168" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
+    }
   }
 
   build_info_table(all_tables_name, all_columns_name)
@@ -368,7 +513,8 @@ submit_btn.addEventListener("click", () => {
 let edges = [
     '<g id="edge0"><path fill="none" stroke="#000000" d="M100,-295 100,-240"></path></g>',
     '<g id="edge1"><path fill="none" stroke="#000000" d="M100,-225.3 100,-168.3"></path></g>',
-    '<g id="edge2"><path fill="none" stroke="#000000" d="M100,-156.3 100,-94.3"></path></g>'
+    '<g id="edge2"><path fill="none" stroke="#000000" d="M100,-156.3 100,-94.3"></path></g>',
+    '<g id="edge3"><path fill="none" stroke="#000000" d="M100,-136.3 100,-34.3"></path></g>'
 ];
 
 let svg_subscript = [
@@ -378,7 +524,8 @@ let svg_subscript = [
 var nodes = [
     ['<g id="node0" class="node"><text text-anchor="middle" x="100" y="-302.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
     ['<g id="node1" class="node"><text text-anchor="middle" x="100" y="-230.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
-    ['<g id="node2" class="node"><text text-anchor="middle" x="100" y="-158.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>']
+    ['<g id="node2" class="node"><text text-anchor="middle" x="100" y="-158.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>'],
+    ['<g id="node3" class="node"><text text-anchor="middle" x="100" y="-132.3" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>']
 ]
 
 function get_svg_node(symbol, subtext, index) {
@@ -439,6 +586,11 @@ function build_info_table(all_tables_name, all_columns_name) {
   create_row(tbody, 'Các cột dữ liệu được đề cập  ', all_columns_name);
 
   html_table.appendChild(table);
+}
+
+function reset_global() {
+  all_tables_name = [];
+  all_columns_name = [];
 }
 
 // console.log(all_columns_name);
