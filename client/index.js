@@ -1,3 +1,4 @@
+// import executeQuery from './execute';
 const condition_keyword = ["AND","OR","LIKE","ASC","DESC"];
 const name_regex = new RegExp("^[_a-zA-Z][_a-zA-A0-9]*$");
 let all_tables_name = [], all_columns_name = [];
@@ -8,6 +9,7 @@ const row_condition = "σ";
 const projection = "π";
 const join_op = "⋈";
 const group_aggre_op = "γ ";
+const html_table = document.getElementById('table');
 const input = document.getElementById("w3review");
 const output = document.getElementById("outtext");
 const tree = document.getElementById("tree");
@@ -91,7 +93,7 @@ function handle_table_str(str, info) {//already lowercased
 
     return "(" + lhs + " " + join_oper + "<sub>" + cond + "</sub> " + rhs +")";
   }
-  console.log("dit cu: "+str);
+  console.log("lkgh;lf : "+str);
   // is table name
   if(!all_tables_name.includes(str)) all_tables_name.push(str);
   return str;
@@ -238,10 +240,24 @@ function eliminate_ineed_from_query(query, lowered_query) {
 }
 
 
-submit_btn.addEventListener("click", () => {
-  reset_global();
-
+submit_btn.addEventListener("click", async () => {
   let query = input.value;
+
+  console.log("dsadsda  "+query)
+
+  // CALL TO GET RESULT
+  let is_success = await executeQuery(query);
+  if(!is_success) {
+      reset_global();
+    output.innerHTML = '<b style="color:red;font-size:1.5em;">Please check your query Again!!!</b>';
+    return;
+  }
+  // CALL TO GET RESULT
+
+  // bo dau cham phay neu co
+  if(query.charAt(query.length-1) === ';') {
+    query = query.substring(0,query.length-1);
+  }
 
   let lower_query = query.toLowerCase();
 
@@ -554,7 +570,6 @@ function get_svg_node_str(symbol, subtext, wrap1, wrap2) {
 
 // }
 function build_info_table(all_tables_name, all_columns_name) {
-  let html_table = document.getElementById('table');
   if(html_table.childElementCount > 0) html_table.removeChild(html_table.lastChild);
 
   let table = document.createElement('table');
@@ -582,8 +597,8 @@ function build_info_table(all_tables_name, all_columns_name) {
     html.appendChild(row);
   }
 
-  create_row(tbody, 'Các bảng dữ liệu được đề cập ', all_tables_name);
-  create_row(tbody, 'Các cột dữ liệu được đề cập  ', all_columns_name);
+  create_row(tbody, '<b>Các bảng dữ liệu được đề cập</b> ', all_tables_name);
+  create_row(tbody, '<b>Các cột dữ liệu được đề cập</b>  ', all_columns_name);
 
   html_table.appendChild(table);
 }
@@ -591,6 +606,11 @@ function build_info_table(all_tables_name, all_columns_name) {
 function reset_global() {
   all_tables_name = [];
   all_columns_name = [];
+
+  html_table.innerHTML = "";
+  output.innerHTML = "Relational Expression Here";
+  tree.innerHTML = "";
+  input.value = "";
 }
 
 // console.log(all_columns_name);
