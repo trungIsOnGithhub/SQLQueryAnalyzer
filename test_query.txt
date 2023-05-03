@@ -1,0 +1,12 @@
+SELECT full_name, admin_name
+FROM provinces INNER JOIN administrative_units
+ON id = administrative_unit_id
+LIMIT 8;
+
+
+SELECT * code, full_name
+FROM provinces;
+
+
+SELECT id, admin_reg_name FROM administrative_regions
+ORDER BY id;

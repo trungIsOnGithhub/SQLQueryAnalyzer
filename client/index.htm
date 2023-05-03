@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+<header>
+  <style>
+    table, th, td {border: 1px solid black;}
+  </style>
+</header>
+<body>
+
+<h1>SQL Query Analyzer</h1>
+
+<div>
+  <p><label for="w3review">Write your SQL Query with Sample Database, and see what we got</label></p>
+  <!-- <textarea id="w3review" rows="4" cols="50">SELECT MaX(dsadd), CouNT(Adhe__sA) As da
+    FROM fasds NATURAL JOIN das
+  WHERE dnsakdjs = dsa AnD dsda = 1   GROUP BY dsadd ,   dws 
+HAving dsa <> dasd</textarea> -->
+<textarea id="w3review" rows="4" cols="50"></textarea>
+  <br>
+  <button id="submit-btn">Submit</button>
+</div>
+
+<p id="outtext">Relational Expression Here</p>
+
+<div id="tree">
+  <svg width="413pt" height="280pt">
+    <g id="graph" transform="scale(1 1) rotate(0) translate(4 328)">
+      <polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-328 409,-328 409,4 -4,4"></polygon>
+    </g>
+    </svg>
+</div>
+
+<table id="result-tab">
+  <tr id="result-table"></tr>
+</table>
+<table id="explain-tab">
+  <tr id="explain-table"></tr>
+</table>
+<div id="table"></div>
+
+</body>
+<script src="execute.js"></script>
+<script src="index.js"></script>
+<script src="tree.js"></script>
+</html>
