@@ -1,3 +1,4 @@
+### my Client Code is kinda ugly, working to improve it :neutral_face:
 ## SQL Query Analyzer Tools
 
 *:golf: Coursework project for "Database Management System" course **|** Semester 2022-2 **|** HCMUT*
