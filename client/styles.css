@@ -1,0 +1,10 @@
+.centered-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+svg {
+    padding-left: 10em;
+}

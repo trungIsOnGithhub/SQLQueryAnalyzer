@@ -246,12 +246,12 @@ submit_btn.addEventListener("click", async () => {
   console.log("dsadsda  "+query)
 
   // CALL TO GET RESULT
-  let is_success = await executeQuery(query);
-  if(!is_success) {
-      reset_global();
-    output.innerHTML = '<b style="color:red;font-size:1.5em;">Please check your query Again!!!</b>';
-    return;
-  }
+  // let is_success = await executeQuery(query);
+  // if(!is_success) {
+  //     reset_global();
+  //   output.innerHTML = '<b style="color:red;font-size:1.5em;">Please check your query Again!!!</b>';
+  //   return;
+  // }
   // CALL TO GET RESULT
 
   // bo dau cham phay neu co
@@ -599,6 +599,9 @@ function build_info_table(all_tables_name, all_columns_name) {
 
   create_row(tbody, '<b>Các bảng dữ liệu được đề cập</b> ', all_tables_name);
   create_row(tbody, '<b>Các cột dữ liệu được đề cập</b>  ', all_columns_name);
+
+  table.classList.add("table");
+  table.classList.add("table-striped");
 
   html_table.appendChild(table);
 }
