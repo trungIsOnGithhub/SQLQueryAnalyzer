@@ -239,11 +239,10 @@ function eliminate_ineed_from_query(query, lowered_query) {
   return result;
 }
 
-
 submit_btn.addEventListener("click", async () => {
   let query = input.value;
 
-  console.log("dsadsda  "+query)
+  // console.log("dsadsda  "+query)
 
   // CALL TO GET RESULT
   // let is_success = await executeQuery(query);
@@ -468,10 +467,10 @@ submit_btn.addEventListener("click", async () => {
       let end_condi_pos = temp_arr[1].indexOf('</sub>'),
           start_condi_pos = temp_arr[1].indexOf('<sub>') + 5;
       let condi = temp_arr[1].substring(start_condi_pos,end_condi_pos);
-      console.log(condi)
+      // console.log(condi)
   
       let join_oper = temp_arr[1].substring(0,start_condi_pos-5);
-      console.log(join_oper)
+      // console.log(join_oper)
   
       query_tree_display.innerHTML += '<g id="edge3"><path fill="none" stroke="#000000" d="M85,'+(-120+table_node_vert_offset).toString()+' 40,'+(-70+table_node_vert_offset).toString()+'"></path></g>';
       query_tree_display.innerHTML += get_svg_node_str(temp_arr[0],'','<g id="node3" class="node"><text text-anchor="middle" x="32" y="'+(-55+table_node_vert_offset).toString()+'" font-family="Times,serif" font-size="14.00" fill="#000000">', '</text></g>');
@@ -615,6 +614,4 @@ function reset_global() {
   tree.innerHTML = "";
   input.value = "";
 }
-
-// console.log(all_columns_name);
-// });
+function display_demo(){console.log("đấ");input.value="SELECT full_name, admin_name\nFROM provinces INNER JOIN administrative_units\nON id = administrative_unit_id\nLIMIT 8;";}
