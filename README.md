@@ -1,4 +1,3 @@
-### sorry for ugly client code, i am working to improve it :neutral_face:
 ## SQL Query Analyzer Tools
 
 *:golf: Coursework project for "Database Management System" course **|** Semester 2022-2 **|** HCMUT*
@@ -35,3 +34,5 @@ WHERE condition2
 - [ ] translate into query tree
 - [ ] connect server to database
 - [ ] provide API for client page
+
+#### awfully look code, working on it :neutral_face:
